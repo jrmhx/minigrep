@@ -10,7 +10,7 @@ pub struct Config{
 
 impl Config {
     pub fn build(
-            mut args: impl Iterator<Item = String>
+            mut args: impl Iterator<Item = String> // a iterator that has String collection ownership
         ) -> Result<Self, &'static str> {
         
         args.next(); // skip the first arg as the cli paramater always has a first arg as binary's path
@@ -87,26 +87,26 @@ pub fn run(config: & Config) -> Result<(), Box<dyn Error>>{
 }
 
 fn search<'a> (query: &str, content: &'a str) -> Vec<&'a str> {
-    let mut ans = Vec::new();
-    for l in content.lines() {
-        if l.contains(query) {
-            ans.push(l);
-        }
-    }
-
-    ans
+    content
+        .lines()
+        .filter(|&line|{ // a little pattern matching here, in the closure a &&str is passed, using &line to pattern matching so line is now &str
+            line
+                .contains(&query)
+        })
+        .collect()
 }
 
 fn search_case_insensitive<'a>(query: &str, content: &'a str) -> Vec<&'a str> {
-    let mut ans = Vec::new();
     let query = query.to_lowercase();
 
-    for l in content.lines() {
-        if l.to_lowercase().contains(&query) {
-            ans.push(l);
-        }
-    }
-    ans
+    content
+        .lines()
+        .filter(|&line|{
+            line
+                .to_lowercase()
+                .contains(&query)
+        })
+        .collect()
 }
 
 fn warning_log(s: &str) {
