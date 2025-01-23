@@ -40,16 +40,48 @@ impl Config {
 
 pub fn run(config: & Config) -> Result<(), Box<dyn Error>>{
     let content = fs::read_to_string(&config.file_path)?;
-    println!("content:\n{}", content);
+    println!("\x1b[32m\ncontent:\x1b[0m");
+    println!("{}", content);
 
     let result = if config.ignore_case {
         search_case_insensitive(&config.query, &content)
     } else {
         search(&config.query, &content)
     };
+    let q_size = config.query.len();
+    let query = if config.ignore_case {
+        &config.query.to_lowercase()
+    } else {
+        &config.query
+    };
+    println!("\x1b[32m\nfound:\x1b[0m");
 
-    println!("\nfound:");
-    result.iter().for_each(|l| println!("{}", l));
+    // print with colored terminal log high light
+    result.iter().for_each(|line| {
+        let mut l = 0;
+
+        let search_line = match config.ignore_case {
+            true => &line.to_lowercase(),
+            false => &line.to_string()
+        };
+        
+        while l < line.len() {
+            let r = search_line[l..]
+                .find(query)
+                .or_else(|| Some(line.len()))
+                .unwrap();
+            if r < line.len() {
+                print!("{}", &line[l..l+r]);
+                warning_log(&line[l+r..l+r+q_size]);
+                l += r + q_size;
+            } else {
+                print!("{}", &line[l..]);
+                l = r;
+            }
+        }
+
+        print!("\n");
+    });
 
     Ok(())
 }
@@ -75,6 +107,10 @@ fn search_case_insensitive<'a>(query: &str, content: &'a str) -> Vec<&'a str> {
         }
     }
     ans
+}
+
+fn warning_log(s: &str) {
+    print!("\x1b[93m{s}\x1b[0m");
 }
 
 #[cfg(test)]
